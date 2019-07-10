@@ -43,7 +43,7 @@ def get_model(ctx, image_size, model_str, layer):
 class FaceModel:
   def __init__(self, args):
     self.args = args
-    ctx = mx.gpu(args.gpu)
+    ctx = mx.cpu()#mx.gpu(args.gpu)
     _vec = args.image_size.split(',')
     assert len(_vec)==2
     image_size = (int(_vec[0]), int(_vec[1]))
@@ -74,22 +74,30 @@ class FaceModel:
     bbox, points = ret
     if bbox.shape[0]==0:
       return None
-    bbox = bbox[0,0:4]
-    points = points[0,:].reshape((2,5)).T
-    #print(bbox)
-    #print(points)
-    nimg = face_preprocess.preprocess(face_img, bbox, points, image_size='112,112')
-    nimg = cv2.cvtColor(nimg, cv2.COLOR_BGR2RGB)
-    aligned = np.transpose(nimg, (2,0,1))
-    return aligned
+    print("Detected box", bbox.shape, points.shape)
+    aligned_faces = []
+    for k, bb in enumerate(bbox):
+        bb = bb[:4]
+        pp = points[k].reshape((2,5)).T
+        nimg = face_preprocess.preprocess(face_img, bb, pp, image_size='112,112')
+        nimg = cv2.cvtColor(nimg, cv2.COLOR_BGR2RGB)
+        aligned_faces.append(np.transpose(nimg, (2,0,1)))
+    aligned_faces = np.array(aligned_faces)
+    print("Aligned bbox", aligned_faces.shape)
+    return aligned_faces, bbox, points
 
   def get_feature(self, aligned):
-    input_blob = np.expand_dims(aligned, axis=0)
+    if aligned.ndim == 3:
+        input_blob = np.expand_dims(aligned, axis=0)
+    else:
+        input_blob = aligned
     data = mx.nd.array(input_blob)
     db = mx.io.DataBatch(data=(data,))
     self.model.forward(db, is_train=False)
     embedding = self.model.get_outputs()[0].asnumpy()
-    embedding = sklearn.preprocessing.normalize(embedding).flatten()
+    embedding = sklearn.preprocessing.normalize(embedding)
+    #embedding = embedding.flatten()
+    #print(embedding.shape)
     return embedding
 
   def get_ga(self, aligned):
