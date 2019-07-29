@@ -3,6 +3,7 @@ import argparse
 import cv2
 import sys
 import numpy as np
+from face_db import FaceDB
 
 def get_image_fea(model, image):
     img = cv2.imread(args.image)
@@ -28,6 +29,8 @@ if __name__ == "__main__":
     model = face_model.FaceModel(args)
     total_feas = []
     face_images = []
+
+    db = FaceDB('hehe')
     for image in args.image:
         img = cv2.imread(image)
         max_size = max(img.shape)
@@ -40,28 +43,30 @@ if __name__ == "__main__":
         
         print(feas.shape)
         print(bbox)
+        db.check({'fn': image}, bbox, points, feas, imgs)
+#        db.show()
+        
 #        print(np.sum(np.square(feas[0] - feas[1])))
-        print(np.dot(feas, feas.T))
-        for b in bbox:
-            bb = b.astype(np.int).tolist()
-            cv2.rectangle(img, (bb[0], bb[1]), (bb[2], bb[3]), 255, 2)
+#        print(np.dot(feas, feas.T))
+#        for b in bbox:
+#            bb = b.astype(np.int).tolist()
+#            cv2.rectangle(img, (bb[0], bb[1]), (bb[2], bb[3]), 255, 2)
         #cv2.imshow("bbox", img)
         #cv2.waitKey()
-        total_feas.append(feas)
-    total_feas = np.concatenate(total_feas, axis=0)
-    face_images = np.concatenate(face_images, axis=0)
-    dist = np.dot(total_feas, total_feas.T) * (1. - np.eye(total_feas.shape[0]))
-    print(np.where(dist > 0.5))
-    for x,y in np.array(np.where(dist > 0.5)).T:
-        print(x,y)
-        if x < y:
-            continue
-        cv2.imshow("l", face_images[x].transpose((1,2,0)))
-        cv2.imshow("r", face_images[y].transpose((1,2,0)))
-        print(dist[x,y])
-        cv2.waitKey()
+#        total_feas.append(feas)
+#    total_feas = np.concatenate(total_feas, axis=0)
+#    face_images = np.concatenate(face_images, axis=0)
+#    dist = np.dot(total_feas, total_feas.T) * (1. - np.eye(total_feas.shape[0]))
+#    print(np.where(dist > 0.5))
+#    for x,y in np.array(np.where(dist > 0.5)).T:
+#        print(x,y)
+#        if x < y:
+#            continue
+#        cv2.imshow("l", face_images[x].transpose((1,2,0)))
+#        cv2.imshow("r", face_images[y].transpose((1,2,0)))
+#        print(dist[x,y])
+#        cv2.waitKey()
         #gender, age = model.get_ga(img)
         #print(gender)
         #print(age)
-    sys.exit(0)
 
